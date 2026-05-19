@@ -2,6 +2,7 @@ pub mod domain;
 pub mod application;
 pub mod infrastructure;
 
+use tauri::Manager;
 use crate::domain::app::AppInfo;
 use crate::application::use_cases::{SearchApps, LaunchApp};
 use crate::infrastructure::linux_repository::{LinuxAppRepository, LinuxAppLauncher};
@@ -31,6 +32,16 @@ pub fn run() {
     .plugin(tauri_plugin_log::Builder::default().build())
     .invoke_handler(tauri::generate_handler![get_apps, launch_app, hide_window])
     .setup(|_app| {
+      Ok(())
+    })
+    .run(tauri::generate_context!())
+    .expect("error while running tauri application");
+}
+vent| {
+        if let tauri::WindowEvent::Focused(false) = event {
+          win_clone.hide().unwrap();
+        }
+      });
       Ok(())
     })
     .run(tauri::generate_context!())

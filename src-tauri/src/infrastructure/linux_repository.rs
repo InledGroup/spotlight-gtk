@@ -10,10 +10,21 @@ pub struct LinuxAppRepository;
 impl AppRepository for LinuxAppRepository {
     fn get_all_apps(&self) -> Vec<AppInfo> {
         let mut apps = Vec::new();
-        let paths = vec![
+        let mut paths = vec![
             PathBuf::from("/usr/share/applications"),
+            PathBuf::from("/usr/local/share/applications"),
             dirs::home_dir().map(|p| p.join(".local/share/applications")).unwrap_or_default(),
         ];
+
+        // Add Flatpak paths if they exist
+        let flatpak_user_path = dirs::home_dir().map(|p| p.join(".local/share/flatpak/exports/share/applications")).unwrap_or_default();
+        if flatpak_user_path.exists() { paths.push(flatpak_user_path); }
+        let flatpak_system_path = PathBuf::from("/var/lib/flatpak/exports/share/applications");
+        if flatpak_system_path.exists() { paths.push(flatpak_system_path); }
+
+        // Add Snap paths if they exist
+        let snap_path = PathBuf::from("/var/lib/snapd/desktop/applications");
+        if snap_path.exists() { paths.push(snap_path); }
 
         for path in paths {
             if !path.exists() { continue; }

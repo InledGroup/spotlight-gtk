@@ -296,8 +296,8 @@
       (app.comment && app.comment.toLowerCase().includes(query.toLowerCase()))
     );
 
-    // Limit results for performance
-    const limit = isGridView ? 48 : 20;
+    // Limit results for performance but high enough to see most apps
+    const limit = isGridView ? 200 : 100;
     filteredApps = filteredApps.slice(0, limit);
 
     selectedIndex = 0;
