@@ -31,13 +31,10 @@ pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_log::Builder::default().build())
     .invoke_handler(tauri::generate_handler![get_apps, launch_app, hide_window])
-    .setup(|_app| {
-      Ok(())
-    })
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
-}
-vent| {
+    .setup(|app| {
+      let window = app.get_webview_window("main").unwrap();
+      let win_clone = window.clone();
+      window.on_window_event(move |event| {
         if let tauri::WindowEvent::Focused(false) = event {
           win_clone.hide().unwrap();
         }
