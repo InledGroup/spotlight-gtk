@@ -1,0 +1,401 @@
+---
+---
+
+<div class="spotlight-container">
+  <div class="spotlight liquid-glass">
+    <div class="search-header">
+      <div class="search-container">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="search-input" placeholder="Search applications..." autofocus autocomplete="off" />
+        <button id="view-toggle" class="view-toggle" title="Toggle Grid/List View">
+          <svg id="grid-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="results-scroll-area" class="results-scroll-area">
+      <div id="results-container" class="results-container list-view">
+        <div class="no-results">Searching applications...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .spotlight-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    background: transparent;
+  }
+
+  .spotlight {
+    width: 100%;
+    max-width: 660px;
+    height: 500px; /* Fixed height to ensure flex-grow/shrink work and scroll area is correctly sized */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    /* Glass Effect Refinement */
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 25px 50px rgba(0, 0, 0, 0.5),
+      inset 0 0 30px rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(30px) saturate(180%) url(#frosted);
+    -webkit-backdrop-filter: blur(30px) saturate(180%) url(#frosted);
+    border-radius: 24px;
+  }
+
+  .search-header {
+    padding: 24px 28px;
+    background: rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    z-index: 100;
+    flex-shrink: 0; /* Header MUST NOT shrink */
+  }
+
+  .search-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .search-icon {
+    width: 26px;
+    height: 26px;
+    color: rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+  }
+
+  #search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: 26px;
+    font-weight: 300;
+    min-width: 0;
+    letter-spacing: -0.5px;
+  }
+
+  #search-input::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+  .view-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .view-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .view-toggle svg {
+    width: 22px;
+    height: 22px;
+    stroke: white; /* Ensure visibility */
+  }
+
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .results-scroll-area::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .results-scroll-area::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+  }
+
+  .results-container.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .results-container.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .no-results {
+    padding: 40px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+    font-size: 18px;
+  }
+
+  :global(.app-item) {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    border: 1px solid transparent;
+  }
+
+  :global(.app-item.selected), :global(.app-item:hover) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  :global(.app-item.grid-item) {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px 12px;
+    gap: 12px;
+  }
+
+  :global(.app-icon) {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  :global(.grid-item .app-icon) {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+  }
+
+  :global(.app-icon img) {
+    width: 85%;
+    height: 85%;
+    object-fit: contain;
+  }
+
+  :global(.app-icon span) {
+    font-size: 20px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+  }
+
+  :global(.grid-item .app-icon span) {
+    font-size: 36px;
+  }
+
+  :global(.app-info) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+  }
+
+  :global(.app-name) {
+    font-size: 17px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  :global(.grid-item .app-name) {
+    font-size: 14px;
+    width: 100%;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  :global(.app-description) {
+    font-size: 13px;
+    opacity: 0.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(255, 255, 255, 0.7);
+  }
+</style>
+
+<script>
+  import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+
+  interface AppInfo {
+    id: string;
+    name: string;
+    exec: string;
+    icon: string | null;
+    icon_path: string | null;
+    comment: string | null;
+  }
+
+  let allApps: AppInfo[] = [];
+  let filteredApps: AppInfo[] = [];
+  let selectedIndex = 0;
+  let isGridView = false;
+
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const resultsContainer = document.getElementById('results-container');
+  const scrollArea = document.getElementById('results-scroll-area');
+  const viewToggle = document.getElementById('view-toggle');
+
+  async function loadApps() {
+    try {
+      allApps = await invoke('get_apps');
+      updateResults('');
+    } catch (err) {
+      console.error('Failed to load apps:', err);
+      if (resultsContainer) {
+        resultsContainer.innerHTML = '<div class="no-results">Error loading apps</div>';
+      }
+    }
+  }
+
+  function updateResults(query: string) {
+    if (!resultsContainer) return;
+
+    filteredApps = allApps.filter(app => 
+      app.name.toLowerCase().includes(query.toLowerCase()) || 
+      (app.comment && app.comment.toLowerCase().includes(query.toLowerCase()))
+    );
+
+    // Limit results for performance
+    const limit = isGridView ? 48 : 20;
+    filteredApps = filteredApps.slice(0, limit);
+
+    selectedIndex = 0;
+    renderResults();
+  }
+
+  function renderResults() {
+    if (!resultsContainer) return;
+
+    if (filteredApps.length === 0) {
+      resultsContainer.innerHTML = `<div class="no-results">${searchInput?.value ? 'No results found' : 'Type to search...'}</div>`;
+      resultsContainer.className = 'results-container';
+      return;
+    }
+
+    resultsContainer.className = `results-container ${isGridView ? 'grid-view' : 'list-view'}`;
+    resultsContainer.innerHTML = filteredApps.map((app, index) => {
+      const iconContent = app.icon_path 
+        ? `<img src="${convertFileSrc(app.icon_path)}" alt="" onerror="this.parentElement.innerHTML='<span>${app.name.charAt(0)}</span>'" />`
+        : `<span>${app.name.charAt(0)}</span>`;
+
+      return `
+        <div class="app-item ${index === selectedIndex ? 'selected' : ''} ${isGridView ? 'grid-item' : ''}" data-index="${index}">
+          <div class="app-icon">${iconContent}</div>
+          <div class="app-info">
+            <div class="app-name">${app.name}</div>
+            ${!isGridView ? `<div class="app-description">${app.comment || app.exec}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const selectedItem = resultsContainer.querySelector('.selected');
+    if (selectedItem) {
+      selectedItem.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  async function launchSelected() {
+    const app = filteredApps[selectedIndex];
+    if (app) {
+      try {
+        await invoke('launch_app', { app });
+        await invoke('hide_window');
+        if (searchInput) {
+          searchInput.value = '';
+          updateResults('');
+        }
+      } catch (err) {
+        console.error('Failed to launch app:', err);
+      }
+    }
+  }
+
+  if (searchInput && resultsContainer) {
+    searchInput.addEventListener('input', (e) => {
+      updateResults((e.target as HTMLInputElement).value);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (filteredApps.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        selectedIndex = (selectedIndex + 1) % filteredApps.length;
+        renderResults();
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        selectedIndex = (selectedIndex - 1 + filteredApps.length) % filteredApps.length;
+        renderResults();
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight' && isGridView) {
+        selectedIndex = (selectedIndex + 1) % filteredApps.length;
+        renderResults();
+        e.preventDefault();
+      } else if (e.key === 'ArrowLeft' && isGridView) {
+        selectedIndex = (selectedIndex - 1 + filteredApps.length) % filteredApps.length;
+        renderResults();
+        e.preventDefault();
+      } else if (e.key === 'Enter') {
+        launchSelected();
+      } else if (e.key === 'Escape') {
+        invoke('hide_window');
+      }
+    });
+
+    resultsContainer.addEventListener('click', (e) => {
+      const item = (e.target as HTMLElement).closest('.app-item');
+      if (item) {
+        const index = parseInt(item.getAttribute('data-index') || '0');
+        selectedIndex = index;
+        launchSelected();
+      }
+    });
+  }
+
+  if (viewToggle) {
+    viewToggle.addEventListener('click', () => {
+      isGridView = !isGridView;
+      renderResults();
+    });
+  }
+
+  // Initial load
+  loadApps();
+</script>
