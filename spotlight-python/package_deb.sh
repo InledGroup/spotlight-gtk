@@ -19,6 +19,7 @@ mkdir -p pkg/usr/share/applications
 # Copy source files to the package structure
 cp main.py pkg/usr/share/spotlight-python/
 cp style.css pkg/usr/share/spotlight-python/
+cp tray.py pkg/usr/share/spotlight-python/
 
 # Build the package
 echo "Building .deb package..."
