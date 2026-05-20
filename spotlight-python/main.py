@@ -1,4 +1,5 @@
 import sys
+import os
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -133,11 +134,12 @@ class SpotlightApp(Adw.Application):
         while (child := self.list_box.get_first_child()): self.list_box.remove(child)
         while (child := self.grid.get_first_child()): self.grid.remove(child)
 
-        for app in self.filtered_apps[:50]: # Limit for performance
+        for app in self.filtered_apps[:200]: # Increased limit
             if self.is_grid_view:
                 self.grid.append(self.create_grid_item(app))
             else:
                 self.list_box.append(self.create_list_item(app))
+
         
         # Select first item
         if not self.is_grid_view:
@@ -158,6 +160,62 @@ class SpotlightApp(Adw.Application):
         
         desc_label = Gtk.Label(label=app['comment'], xalign=0)
         desc_label.add_css_class("app-desc")
+        desc_label.set_ellipsize(True)
+        desc_label.set_max_width_chars(60)
+
+        info_box.append(name_label)
+        info_box.append(desc_label)
+        
+        box.append(icon)
+        box.append(info_box)
+        return box
+
+    def create_grid_item(self, app):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.add_css_class("app-item-grid")
+        box.set_size_request(100, -1) # Let height be dynamic for wrapped text
+        
+        icon = Gtk.Image.new_from_gicon(app['icon'])
+        icon.set_pixel_size(64)
+        icon.add_css_class("app-icon-grid")
+        
+        name_label = Gtk.Label(label=app['name'])
+        name_label.add_css_class("app-name-grid")
+        name_label.set_wrap(True)
+        name_label.set_justify(Gtk.Justification.CENTER)
+        name_label.set_max_width_chars(15)
+        name_label.set_halign(Gtk.Align.CENTER)
+
+        box.append(icon)
+        box.append(name_label)
+        return box
+
+    def on_enter_pressed(self, entry):
+        if self.filtered_apps:
+            self.launch_app(self.filtered_apps[0])
+
+    def on_row_activated(self, listbox, row):
+        index = row.get_index()
+        self.launch_app(self.filtered_apps[index])
+
+    def on_child_activated(self, flowbox, child):
+        index = child.get_index()
+        self.launch_app(self.filtered_apps[index])
+
+    def launch_app(self, app):
+        app['app_info'].launch(None, None)
+        self.win.close()
+
+    def on_key_pressed(self, ctrl, keyval, keycode, state):
+        if keyval == Gdk.KEY_Escape:
+            self.win.close()
+            return True
+        return False
+
+if __name__ == "__main__":
+    app = SpotlightApp()
+    app.run(sys.argv)
+       desc_label.add_css_class("app-desc")
         desc_label.set_ellipsize(True)
         desc_label.set_max_width_chars(60)
 
