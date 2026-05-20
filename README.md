@@ -2,6 +2,10 @@
 
 A standalone GTK4 application launcher for Linux with a liquid glass aesthetic, inspired by macOS Spotlight.
 
+<p align="center">
+  <img src="demo.png" alt="Spotlight GTK Demo">
+</p>
+
 ## Key Features
 - Native GTK4 and Libadwaita implementation.
 - Liquid glass UI with transparency and blur.
