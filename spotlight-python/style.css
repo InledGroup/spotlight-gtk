@@ -1,28 +1,28 @@
 window.transparent-window {
-    background-color: transparent !important;
-    background: none !important;
-    box-shadow: none !important;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
 }
 
 .spotlight-main {
-    background-color: rgba(30, 30, 30, 0.7) !important;
+    background-color: rgba(30, 30, 30, 0.7);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 .search-header {
     padding: 20px;
-    background: transparent !important;
+    background-color: transparent;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .search-input {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    color: white !important;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    color: white;
     font-size: 24px;
     font-weight: 300;
 }
@@ -51,8 +51,12 @@ window.transparent-window {
     transition: all 0.2s;
 }
 
-.app-item-list:hover, .app-item-list:selected {
-    background: rgba(255, 255, 255, 0.15);
+.app-item-list:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.app-item-list:selected {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .app-name {
@@ -69,11 +73,14 @@ window.transparent-window {
 .app-item-grid {
     padding: 10px 5px;
     border-radius: 15px;
-    transition: all 0.2s;
 }
 
-.app-item-grid:hover, .app-item-grid:selected {
-    background: rgba(255, 255, 255, 0.15);
+.app-item-grid:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.app-item-grid:selected {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .app-name-grid {

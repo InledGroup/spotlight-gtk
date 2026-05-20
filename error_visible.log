@@ -1,0 +1,10 @@
+
+(main.py:104679): Gtk-WARNING **: 21:43:23.302: Theme parser error: style.css:31:18-19: Expected a valid color.
+
+(main.py:104679): Gtk-WARNING **: 21:43:23.302: Theme parser error: style.css:32:22-23: Junk at end of value for box-shadow
+
+(main.py:104679): Gtk-WARNING **: 21:43:23.302: Theme parser error: style.css:33:19-20: Expected a valid color.
+/usr/share/spotlight-python/tray.py:53: DeprecationWarning: Gtk.StatusIcon.new_from_icon_name is deprecated
+  icon = Gtk.StatusIcon.new_from_icon_name("system-search-symbolic")
+/usr/share/spotlight-python/tray.py:54: DeprecationWarning: Gtk.StatusIcon.set_title is deprecated
+  icon.set_title("Spotlight")

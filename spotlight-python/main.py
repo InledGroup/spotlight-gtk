@@ -108,6 +108,7 @@ X-GNOME-Autostart-enabled=true
             pass
 
     def do_activate(self):
+        self.hold() # Keep the app alive even without windows
         self.start_tray()
         if not self.win:
             self.load_apps()
@@ -179,8 +180,9 @@ X-GNOME-Autostart-enabled=true
         self.filtered_apps = self.all_apps[:]
 
     def build_ui(self):
-        # Force dark theme
-        Gtk.Settings.get_default().set_property("gtk-application-prefer-dark-theme", True)
+        # Force dark theme using Adw.StyleManager
+        style_manager = Adw.StyleManager.get_default()
+        style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
         
         # Main Window
         self.win = Gtk.ApplicationWindow(application=self)

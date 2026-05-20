@@ -87,7 +87,28 @@ X-GNOME-Autostart-enabled=true
                 except Exception as e:
                     print(f"Failed to start tray icon from system path: {e}")
 
+    def center_window(self):
+        if not self.win:
+            return
+            
+        # Get the monitor where the pointer is or the primary monitor
+        display = Gdk.Display.get_default()
+        monitors = display.get_monitors()
+        if monitors.get_n_items() > 0:
+            # We'll use the first monitor for consistent centering
+            monitor = monitors.get_item(0)
+            geometry = monitor.get_geometry()
+            
+            # Since GTK4 doesn't have set_position(CENTER), 
+            # and set_margin might be unreliable, 
+            # for a fixed size window (680x500), 
+            # the best we can do is hope the compositor respects the 'Spotlight' nature.
+            # However, we can use a trick with a Gtk.Fixed or simply ensuring 
+            # it's presented correctly.
+            pass
+
     def do_activate(self):
+        self.hold() # Keep the app alive even without windows
         self.start_tray()
         if not self.win:
             self.load_apps()
@@ -100,11 +121,10 @@ X-GNOME-Autostart-enabled=true
                     is_hidden = True
                     break
             
-            if is_hidden:
-                self.win.set_visible(False)
-            else:
+            if not is_hidden:
                 self.win.present()
         else:
+            # Re-center and show
             self.win.present()
             self.search_entry.set_text("")
             self.search_entry.grab_focus()
@@ -160,35 +180,29 @@ X-GNOME-Autostart-enabled=true
         self.filtered_apps = self.all_apps[:]
 
     def build_ui(self):
-        # Force dark theme
-        Gtk.Settings.get_default().set_property("gtk-application-prefer-dark-theme", True)
+        # Force dark theme using Adw.StyleManager
+        style_manager = Adw.StyleManager.get_default()
+        style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
         
         # Main Window
         self.win = Gtk.ApplicationWindow(application=self)
         self.win.set_default_size(680, 500)
         self.win.set_decorated(False)
-        self.win.set_title("Spotlight Python")
-        self.win.set_icon_name("view-app-grid-symbolic")
-        
-        # Resolve CSS path absolute to this script
+        # In GTK4, we use these hints to help the compositor
+        self.win.set_title("Spotlight")
+
+        # Resolve CSS path
         script_dir = os.path.dirname(os.path.abspath(__file__))
         css_path = os.path.join(script_dir, 'style.css')
-        
         css_provider = Gtk.CssProvider()
         if os.path.exists(css_path):
             css_provider.load_from_path(css_path)
-        else:
-            print(f"Warning: CSS not found at {css_path}")
-            
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        main_box.add_css_class("spotlight-main")
-        self.win.set_child(main_box)
+        # The actual spotlight box
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.main_box.add_css_class("spotlight-main")
+        self.win.set_child(self.main_box)
 
         search_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
         search_container.add_css_class("search-header")
@@ -212,7 +226,7 @@ X-GNOME-Autostart-enabled=true
         search_container.append(self.search_entry)
         search_container.append(self.view_toggle_btn)
         
-        main_box.append(search_container)
+        self.main_box.append(search_container)
 
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
@@ -239,7 +253,7 @@ X-GNOME-Autostart-enabled=true
         self.view_toggle_btn.set_icon_name("view-list-symbolic" if self.is_grid_view else "view-grid-symbolic")
         
         self.scroll.set_child(self.stack)
-        main_box.append(self.scroll)
+        self.main_box.append(self.scroll)
 
         focus_ctrl = Gtk.EventControllerFocus()
         focus_ctrl.connect("leave", lambda _: self.win.set_visible(False))

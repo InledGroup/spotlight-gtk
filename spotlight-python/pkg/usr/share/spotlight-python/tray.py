@@ -5,19 +5,31 @@ import signal
 import subprocess
 
 gi.require_version('Gtk', '3.0')
-gi.require_version('AyatanaAppIndicator3', '0.1')
-from gi.repository import Gtk, AyatanaAppIndicator3, GLib
+from gi.repository import Gtk, GLib
 
 MAIN_PID = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
-def show_app(item):
-    # Try to launch via the installed command or directly
+def show_app(icon=None):
     try:
         subprocess.Popen(["spotlight-python"])
     except FileNotFoundError:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         main_script = os.path.join(script_dir, 'main.py')
         subprocess.Popen(["python3", main_script])
+
+def on_popup_menu(icon, button, time):
+    menu = Gtk.Menu()
+    
+    item_show = Gtk.MenuItem(label="Show Spotlight")
+    item_show.connect("activate", lambda _: show_app())
+    menu.append(item_show)
+    
+    item_quit = Gtk.MenuItem(label="Quit")
+    item_quit.connect("activate", quit_app)
+    menu.append(item_quit)
+    
+    menu.show_all()
+    menu.popup(None, None, Gtk.StatusIcon.position_menu, icon, button, time)
 
 def quit_app(item):
     if MAIN_PID:
@@ -32,37 +44,24 @@ def check_main_pid():
         try:
             os.kill(MAIN_PID, 0)
         except OSError:
-            # Main process is no longer running, so we should exit too
             Gtk.main_quit()
             return False
     return True
 
 def main():
-    indicator = AyatanaAppIndicator3.Indicator.new(
-        "spotlight-python-tray",
-        "system-search-symbolic",
-        AyatanaAppIndicator3.IndicatorCategory.APPLICATION_STATUS
-    )
-    indicator.set_status(AyatanaAppIndicator3.IndicatorStatus.ACTIVE)
+    # Gtk.StatusIcon is the classic way and supports click events perfectly
+    icon = Gtk.StatusIcon.new_from_icon_name("system-search-symbolic")
+    icon.set_title("Spotlight")
     
-    menu = Gtk.Menu()
+    # Left click: Show Spotlight
+    icon.connect("activate", show_app)
     
-    item_show = Gtk.MenuItem(label="Show Spotlight")
-    item_show.connect("activate", show_app)
-    menu.append(item_show)
-    
-    item_quit = Gtk.MenuItem(label="Quit")
-    item_quit.connect("activate", quit_app)
-    menu.append(item_quit)
-    
-    menu.show_all()
-    indicator.set_menu(menu)
+    # Right click: Context menu
+    icon.connect("popup-menu", on_popup_menu)
     
     if MAIN_PID:
-        # Check every 2 seconds if the main app is still alive
         GLib.timeout_add(2000, check_main_pid)
         
-    # Handle graceful termination
     signal.signal(signal.SIGTERM, lambda *_: Gtk.main_quit())
     signal.signal(signal.SIGINT, lambda *_: Gtk.main_quit())
     
