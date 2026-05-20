@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import gi
+import subprocess
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Gdk, Gio, GLib, Adw
@@ -12,9 +13,12 @@ class SpotlightApp(Adw.Application):
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.all_apps = []
         self.filtered_apps = []
+        self.win = None
         self.config_dir = os.path.join(GLib.get_user_config_dir(), 'spotlight-python')
         self.config_file = os.path.join(self.config_dir, 'config.json')
         self.is_grid_view = self.load_config()
+        self.ensure_autostart()
+        self.indicator_proc = None
 
     def load_config(self):
         if os.path.exists(self.config_file):
@@ -35,9 +39,77 @@ class SpotlightApp(Adw.Application):
         except Exception as e:
             print(f"Error saving config: {e}")
 
+    def ensure_autostart(self):
+        autostart_dir = os.path.join(GLib.get_user_config_dir(), 'autostart')
+        if not os.path.exists(autostart_dir):
+            try:
+                os.makedirs(autostart_dir)
+            except:
+                return
+        
+        autostart_file = os.path.join(autostart_dir, 'spotlight-python.desktop')
+        if not os.path.exists(autostart_file):
+            desktop_content = """[Desktop Entry]
+Name=Spotlight
+Exec=spotlight-python --hidden
+Icon=view-app-grid-symbolic
+Type=Application
+Categories=Utility;
+Comment=Apple-like Spotlight launcher
+Terminal=false
+X-GNOME-Autostart-enabled=true
+"""
+            try:
+                with open(autostart_file, 'w') as f:
+                    f.write(desktop_content)
+            except Exception as e:
+                print(f"Error creating autostart file: {e}")
+
+    def start_tray(self):
+        if self.indicator_proc is not None:
+            return # Process already started
+        
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        tray_script = os.path.join(script_dir, 'tray.py')
+        
+        if os.path.exists(tray_script):
+            try:
+                # Use sys.executable to ensure we use the same python interpreter
+                self.indicator_proc = subprocess.Popen([sys.executable, tray_script, str(os.getpid())])
+            except Exception as e:
+                print(f"Failed to start tray icon: {e}")
+        else:
+            # Try system path if script not found in same dir (when installed)
+            sys_tray = "/usr/share/spotlight-python/tray.py"
+            if os.path.exists(sys_tray):
+                try:
+                    self.indicator_proc = subprocess.Popen([sys.executable, sys_tray, str(os.getpid())])
+                except Exception as e:
+                    print(f"Failed to start tray icon from system path: {e}")
+
     def do_activate(self):
-        self.load_apps()
-        self.build_ui()
+        self.start_tray()
+        if not self.win:
+            self.load_apps()
+            self.build_ui()
+            
+            # Check if we should start hidden
+            is_hidden = False
+            for arg in sys.argv:
+                if arg == "--hidden":
+                    is_hidden = True
+                    break
+            
+            if is_hidden:
+                self.win.set_visible(False)
+            else:
+                self.win.present()
+        else:
+            self.win.present()
+            self.search_entry.set_text("")
+            self.search_entry.grab_focus()
+            self.load_apps()
+            self.render_results()
 
     def load_apps(self):
         app_dict = {}
@@ -170,7 +242,7 @@ class SpotlightApp(Adw.Application):
         main_box.append(self.scroll)
 
         focus_ctrl = Gtk.EventControllerFocus()
-        focus_ctrl.connect("leave", lambda _: self.win.close())
+        focus_ctrl.connect("leave", lambda _: self.win.set_visible(False))
         self.win.add_controller(focus_ctrl)
 
         key_ctrl = Gtk.EventControllerKey()
@@ -178,8 +250,15 @@ class SpotlightApp(Adw.Application):
         self.win.add_controller(key_ctrl)
 
         self.render_results()
-        self.win.present()
+        # self.win.present() # Handled in do_activate
         self.search_entry.grab_focus()
+
+        # Handle close request to hide instead of closing
+        self.win.connect("close-request", self.on_close_request)
+
+    def on_close_request(self, win):
+        win.set_visible(False)
+        return True
 
     def toggle_view(self, btn):
         self.is_grid_view = not self.is_grid_view
@@ -271,14 +350,22 @@ class SpotlightApp(Adw.Application):
 
     def launch_app(self, app):
         app['app_info'].launch(None, None)
-        self.win.close()
+        self.win.set_visible(False)
 
     def on_key_pressed(self, ctrl, keyval, keycode, state):
         if keyval == Gdk.KEY_Escape:
-            self.win.close()
+            self.win.set_visible(False)
             return True
+        
+        # Ctrl+Q to quit
+        if (state & Gdk.ModifierType.CONTROL_MASK) and keyval == Gdk.KEY_q:
+            self.quit()
+            return True
+            
         return False
 
 if __name__ == "__main__":
     app = SpotlightApp()
-    app.run(sys.argv)
+    # Filter out our custom flags before passing to Gtk.Application
+    clean_argv = [arg for arg in sys.argv if arg != "--hidden"]
+    app.run(clean_argv)
