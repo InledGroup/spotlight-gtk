@@ -75,6 +75,7 @@ class SpotlightApp(Adw.Application):
         self.win.set_default_size(680, 500)
         self.win.set_decorated(False) # Frameless
         self.win.set_title("Spotlight Python")
+        self.win.set_icon_name("view-app-grid-symbolic")
         
         css_provider = Gtk.CssProvider()
         css_provider.load_from_path('style.css')
@@ -152,6 +153,7 @@ class SpotlightApp(Adw.Application):
         self.is_grid_view = not self.is_grid_view
         self.stack.set_visible_child_name("grid" if self.is_grid_view else "list")
         btn.set_icon_name("view-list-symbolic" if self.is_grid_view else "view-grid-symbolic")
+        self.save_config()
         self.render_results()
 
     def on_search_changed(self, entry):
@@ -228,6 +230,36 @@ class SpotlightApp(Adw.Application):
             self.launch_app(self.filtered_apps[0])
 
     def on_row_activated(self, listbox, row):
+        index = row.get_index()
+        self.launch_app(self.filtered_apps[index])
+
+    def on_child_activated(self, flowbox, child):
+        index = child.get_index()
+        self.launch_app(self.filtered_apps[index])
+
+    def launch_app(self, app):
+        app['app_info'].launch(None, None)
+        self.win.close()
+
+    def on_key_pressed(self, ctrl, keyval, keycode, state):
+        if keyval == Gdk.KEY_Escape:
+            self.win.close()
+            return True
+        return False
+
+if __name__ == "__main__":
+    app = SpotlightApp()
+    app.run(sys.argv)
+trl, keyval, keycode, state):
+        if keyval == Gdk.KEY_Escape:
+            self.win.close()
+            return True
+        return False
+
+if __name__ == "__main__":
+    app = SpotlightApp()
+    app.run(sys.argv)
+ox, row):
         index = row.get_index()
         self.launch_app(self.filtered_apps[index])
 
