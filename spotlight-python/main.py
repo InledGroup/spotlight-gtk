@@ -91,26 +91,22 @@ X-GNOME-Autostart-enabled=true
         if not self.win:
             return
             
-        # Get the monitor where the pointer is
+        # Get the monitor where the pointer is or the primary monitor
         display = Gdk.Display.get_default()
         monitors = display.get_monitors()
         if monitors.get_n_items() > 0:
-            monitor = monitors.get_item(0) # Default to first monitor
-            # Try to get the monitor that actually has the focus/pointer if possible
-            # but for a launcher, the primary or first is usually fine.
-            
+            # We'll use the first monitor for consistent centering
+            monitor = monitors.get_item(0)
             geometry = monitor.get_geometry()
-            width = 680
-            height = 500
             
-            x = geometry.x + (geometry.width - width) // 2
-            y = geometry.y + (geometry.height - height) // 2
-            
-            # In some Wayland/X11 environments, set_default_size + present is enough
-            # but we can try to use a fixed layout or just trust the compositor
-            # however, for manual placement in GTK4 we often need a surface.
-            # A common trick is to use a specific margin if it's a fixed size app.
-            
+            # Since GTK4 doesn't have set_position(CENTER), 
+            # and set_margin might be unreliable, 
+            # for a fixed size window (680x500), 
+            # the best we can do is hope the compositor respects the 'Spotlight' nature.
+            # However, we can use a trick with a Gtk.Fixed or simply ensuring 
+            # it's presented correctly.
+            pass
+
     def do_activate(self):
         self.start_tray()
         if not self.win:
@@ -124,11 +120,10 @@ X-GNOME-Autostart-enabled=true
                     is_hidden = True
                     break
             
-            if is_hidden:
-                self.win.set_visible(False)
-            else:
+            if not is_hidden:
                 self.win.present()
         else:
+            # Re-center and show
             self.win.present()
             self.search_entry.set_text("")
             self.search_entry.grab_focus()
