@@ -88,14 +88,26 @@ class SpotlightApp(Adw.Application):
         self.filtered_apps = self.all_apps[:]
 
     def build_ui(self):
+        # Force dark theme
+        Gtk.Settings.get_default().set_property("gtk-application-prefer-dark-theme", True)
+        
+        # Main Window
         self.win = Gtk.ApplicationWindow(application=self)
         self.win.set_default_size(680, 500)
         self.win.set_decorated(False)
         self.win.set_title("Spotlight Python")
         self.win.set_icon_name("view-app-grid-symbolic")
         
+        # Resolve CSS path absolute to this script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        css_path = os.path.join(script_dir, 'style.css')
+        
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_path('style.css')
+        if os.path.exists(css_path):
+            css_provider.load_from_path(css_path)
+        else:
+            print(f"Warning: CSS not found at {css_path}")
+            
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(),
             css_provider,

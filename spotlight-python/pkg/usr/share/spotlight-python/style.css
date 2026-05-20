@@ -1,28 +1,30 @@
 .spotlight-main {
-    background: rgba(30, 30, 30, 0.7);
+    background-color: rgba(30, 30, 30, 0.7) !important;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    /* Note: Actual glass blur in GTK requires compositor support,
-       but we simulate the look with semi-transparency and saturation */
 }
 
 .search-header {
     padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
+    background: transparent !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.search-icon {
-    color: rgba(255, 255, 255, 0.6);
-}
-
 .search-input {
-    background: transparent;
-    border: none;
-    color: white;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: white !important;
     font-size: 24px;
     font-weight: 300;
+}
+
+.search-input:focus {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .view-toggle {
