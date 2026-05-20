@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -11,17 +12,35 @@ class SpotlightApp(Adw.Application):
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.all_apps = []
         self.filtered_apps = []
-        self.is_grid_view = False
+        self.config_dir = os.path.join(GLib.get_user_config_dir(), 'spotlight-python')
+        self.config_file = os.path.join(self.config_dir, 'config.json')
+        self.is_grid_view = self.load_config()
+
+    def load_config(self):
+        if os.path.exists(self.config_file):
+            try:
+                with open(self.config_file, 'r') as f:
+                    config = json.load(f)
+                    return config.get('is_grid_view', False)
+            except:
+                pass
+        return False
+
+    def save_config(self):
+        if not os.path.exists(self.config_dir):
+            os.makedirs(self.config_dir)
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump({'is_grid_view': self.is_grid_view}, f)
+        except Exception as e:
+            print(f"Error saving config: {e}")
 
     def do_activate(self):
         self.load_apps()
         self.build_ui()
 
     def load_apps(self):
-        # Load all system applications using Gio
-        app_dict = {} # Use dict to avoid duplicates by ID
-        
-        # 1. Use Gio first as it's the standard
+        app_dict = {}
         all_app_infos = Gio.AppInfo.get_all()
         for app in all_app_infos:
             if app.get_name():
@@ -33,7 +52,6 @@ class SpotlightApp(Adw.Application):
                     'app_info': app
                 }
 
-        # 2. Manual scan for common paths to ensure nothing is missed (Flatpak, Snap, etc)
         paths = [
             "/usr/share/applications",
             "/usr/local/share/applications",
@@ -70,10 +88,9 @@ class SpotlightApp(Adw.Application):
         self.filtered_apps = self.all_apps[:]
 
     def build_ui(self):
-        # Main Window
         self.win = Gtk.ApplicationWindow(application=self)
         self.win.set_default_size(680, 500)
-        self.win.set_decorated(False) # Frameless
+        self.win.set_decorated(False)
         self.win.set_title("Spotlight Python")
         self.win.set_icon_name("view-app-grid-symbolic")
         
@@ -134,6 +151,9 @@ class SpotlightApp(Adw.Application):
         self.stack.add_named(self.list_box, "list")
         self.stack.add_named(self.grid, "grid")
         
+        self.stack.set_visible_child_name("grid" if self.is_grid_view else "list")
+        self.view_toggle_btn.set_icon_name("view-list-symbolic" if self.is_grid_view else "view-grid-symbolic")
+        
         self.scroll.set_child(self.stack)
         main_box.append(self.scroll)
 
@@ -182,7 +202,7 @@ class SpotlightApp(Adw.Application):
         if app['icon']:
             icon = Gtk.Image.new_from_gicon(app['icon'])
         else:
-            icon = Gtk.Image.new_from_icon_name("view-app-grid-symbolic")
+            icon = Gtk.Image.new_from_icon_name("application-x-executable-symbolic")
         icon.set_pixel_size(32)
         icon.add_css_class("app-icon")
         
@@ -210,7 +230,7 @@ class SpotlightApp(Adw.Application):
         if app['icon']:
             icon = Gtk.Image.new_from_gicon(app['icon'])
         else:
-            icon = Gtk.Image.new_from_icon_name("view-app-grid-symbolic")
+            icon = Gtk.Image.new_from_icon_name("application-x-executable-symbolic")
         icon.set_pixel_size(64)
         icon.add_css_class("app-icon-grid")
         
@@ -230,36 +250,6 @@ class SpotlightApp(Adw.Application):
             self.launch_app(self.filtered_apps[0])
 
     def on_row_activated(self, listbox, row):
-        index = row.get_index()
-        self.launch_app(self.filtered_apps[index])
-
-    def on_child_activated(self, flowbox, child):
-        index = child.get_index()
-        self.launch_app(self.filtered_apps[index])
-
-    def launch_app(self, app):
-        app['app_info'].launch(None, None)
-        self.win.close()
-
-    def on_key_pressed(self, ctrl, keyval, keycode, state):
-        if keyval == Gdk.KEY_Escape:
-            self.win.close()
-            return True
-        return False
-
-if __name__ == "__main__":
-    app = SpotlightApp()
-    app.run(sys.argv)
-trl, keyval, keycode, state):
-        if keyval == Gdk.KEY_Escape:
-            self.win.close()
-            return True
-        return False
-
-if __name__ == "__main__":
-    app = SpotlightApp()
-    app.run(sys.argv)
-ox, row):
         index = row.get_index()
         self.launch_app(self.filtered_apps[index])
 
