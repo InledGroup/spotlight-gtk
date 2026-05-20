@@ -1,43 +1,36 @@
-# Astro Starter Kit: Minimal
+# Spotlight GTK
 
-```sh
-npm create astro@latest -- --template minimal
+A standalone GTK4 application launcher for Linux with a liquid glass aesthetic, inspired by macOS Spotlight.
+
+## Key Features
+- Native GTK4 and Libadwaita implementation.
+- Liquid glass UI with transparency and blur.
+- Search across system applications, Flatpaks, and Snaps.
+- Persistent view preference (Grid or List mode).
+- Frameless, always-on-top window with auto-hide on blur.
+
+## Installation
+Download the latest `.deb` package from the [Releases](https://github.com/your-username/spotlight/releases) section and install it:
+
+```bash
+sudo apt install ./spotlight-python.deb
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Once installed, pin "Spotlight" to your dock or assign a global keyboard shortcut to `/usr/bin/spotlight-python`.
 
-## 🚀 Project Structure
+## Local Development
+To run the application from source:
 
-Inside of your Astro project, you'll see the following folders and files:
+1. Install dependencies:
+   ```bash
+   pip install PyGObject libadwaita
+   ```
+2. Run the application:
+   ```bash
+   python3 spotlight-python/main.py
+   ```
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## Repository Structure
+- `spotlight-python/`: Main stable version (Recommended).
+- `src-tauri/`: Experimental Tauri 2 + Astro implementation.
+- `.github/workflows/`: Automation for building and releasing `.deb` packages.
