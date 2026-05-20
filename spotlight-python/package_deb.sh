@@ -1,11 +1,28 @@
 #!/bin/bash
-# Local script to build the .deb package
+# Local script to build the .deb package with error handling
+set -e
+
+# Determine the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Navigate to the directory containing the source files
+cd "$SCRIPT_DIR"
+
+echo "Preparing package structure..."
+
+# Ensure target directories exist
+mkdir -p pkg/usr/share/spotlight-python
+mkdir -p pkg/usr/bin
+mkdir -p pkg/usr/share/applications
 
 # Copy source files to the package structure
-cp spotlight-python/main.py spotlight-python/pkg/usr/share/spotlight-python/
-cp spotlight-python/style.css spotlight-python/pkg/usr/share/spotlight-python/
+cp main.py pkg/usr/share/spotlight-python/
+cp style.css pkg/usr/share/spotlight-python/
 
 # Build the package
-dpkg-deb --build spotlight-python/pkg spotlight-python.deb
+echo "Building .deb package..."
+dpkg-deb --build pkg ../spotlight-python.deb
 
-echo "Done! spotlight-python.deb created."
+echo "------------------------------------------------"
+echo "Success! spotlight-python.deb created in the project root."
