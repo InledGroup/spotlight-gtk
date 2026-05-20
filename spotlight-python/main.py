@@ -171,7 +171,7 @@ class SpotlightApp(Adw.Application):
     def create_grid_item(self, app):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         box.add_css_class("app-item-grid")
-        box.set_size_request(100, 110)
+        box.set_size_request(100, -1) # Let height be dynamic for wrapped text
         
         icon = Gtk.Image.new_from_gicon(app['icon'])
         icon.set_pixel_size(64)
@@ -179,8 +179,10 @@ class SpotlightApp(Adw.Application):
         
         name_label = Gtk.Label(label=app['name'])
         name_label.add_css_class("app-name-grid")
-        name_label.set_ellipsize(True)
-        name_label.set_max_width_chars(12)
+        name_label.set_wrap(True)
+        name_label.set_justify(Gtk.Justification.CENTER)
+        name_label.set_max_width_chars(15)
+        name_label.set_halign(Gtk.Align.CENTER)
 
         box.append(icon)
         box.append(name_label)
