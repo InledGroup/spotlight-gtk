@@ -18,7 +18,7 @@ class SpotlightApp(Adw.Application):
         self.config_file = os.path.join(self.config_dir, 'config.json')
         self.is_grid_view = self.load_config()
         self.ensure_autostart()
-        self.indicator = None
+        self.indicator_proc = None
 
     def load_config(self):
         if os.path.exists(self.config_file):
@@ -66,7 +66,7 @@ X-GNOME-Autostart-enabled=true
                 print(f"Error creating autostart file: {e}")
 
     def start_tray(self):
-        if self.indicator is not None:
+        if self.indicator_proc is not None:
             return # Process already started
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -74,9 +74,18 @@ X-GNOME-Autostart-enabled=true
         
         if os.path.exists(tray_script):
             try:
-                self.indicator = subprocess.Popen(["python3", tray_script, str(os.getpid())])
+                # Use sys.executable to ensure we use the same python interpreter
+                self.indicator_proc = subprocess.Popen([sys.executable, tray_script, str(os.getpid())])
             except Exception as e:
                 print(f"Failed to start tray icon: {e}")
+        else:
+            # Try system path if script not found in same dir (when installed)
+            sys_tray = "/usr/share/spotlight-python/tray.py"
+            if os.path.exists(sys_tray):
+                try:
+                    self.indicator_proc = subprocess.Popen([sys.executable, sys_tray, str(os.getpid())])
+                except Exception as e:
+                    print(f"Failed to start tray icon from system path: {e}")
 
     def do_activate(self):
         self.start_tray()
@@ -85,7 +94,13 @@ X-GNOME-Autostart-enabled=true
             self.build_ui()
             
             # Check if we should start hidden
-            if "--hidden" in sys.argv:
+            is_hidden = False
+            for arg in sys.argv:
+                if arg == "--hidden":
+                    is_hidden = True
+                    break
+            
+            if is_hidden:
                 self.win.set_visible(False)
             else:
                 self.win.present()
@@ -351,4 +366,6 @@ X-GNOME-Autostart-enabled=true
 
 if __name__ == "__main__":
     app = SpotlightApp()
-    app.run(sys.argv)
+    # Filter out our custom flags before passing to Gtk.Application
+    clean_argv = [arg for arg in sys.argv if arg != "--hidden"]
+    app.run(clean_argv)
