@@ -19,15 +19,53 @@ class SpotlightApp(Adw.Application):
 
     def load_apps(self):
         # Load all system applications using Gio
+        app_dict = {} # Use dict to avoid duplicates by ID
+        
+        # 1. Use Gio first as it's the standard
         all_app_infos = Gio.AppInfo.get_all()
         for app in all_app_infos:
-            if app.should_show():
-                self.all_apps.append({
+            if app.get_name():
+                app_id = app.get_id() or app.get_name()
+                app_dict[app_id] = {
                     'name': app.get_name(),
                     'comment': app.get_description() or "",
                     'icon': app.get_icon(),
                     'app_info': app
-                })
+                }
+
+        # 2. Manual scan for common paths to ensure nothing is missed (Flatpak, Snap, etc)
+        paths = [
+            "/usr/share/applications",
+            "/usr/local/share/applications",
+            "/var/lib/flatpak/exports/share/applications",
+            "/var/lib/snapd/desktop/applications"
+        ]
+        
+        home = GLib.get_home_dir()
+        if home:
+            paths.append(home + "/.local/share/applications")
+            paths.append(home + "/.local/share/flatpak/exports/share/applications")
+
+        for path in paths:
+            if not os.path.exists(path): continue
+            for filename in os.listdir(path):
+                if filename.endswith(".desktop"):
+                    file_path = os.path.join(path, filename)
+                    try:
+                        app = Gio.DesktopAppInfo.new_from_filename(file_path)
+                        if app and app.get_name():
+                            app_id = app.get_id() or filename
+                            if app_id not in app_dict:
+                                app_dict[app_id] = {
+                                    'name': app.get_name(),
+                                    'comment': app.get_description() or "",
+                                    'icon': app.get_icon(),
+                                    'app_info': app
+                                }
+                    except:
+                        continue
+
+        self.all_apps = list(app_dict.values())
         self.all_apps.sort(key=lambda x: x['name'].lower())
         self.filtered_apps = self.all_apps[:]
 
@@ -38,7 +76,6 @@ class SpotlightApp(Adw.Application):
         self.win.set_decorated(False) # Frameless
         self.win.set_title("Spotlight Python")
         
-        # CSS Provider for Liquid Glass
         css_provider = Gtk.CssProvider()
         css_provider.load_from_path('style.css')
         Gtk.StyleContext.add_provider_for_display(
@@ -47,12 +84,10 @@ class SpotlightApp(Adw.Application):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
-        # Main Layout
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         main_box.add_css_class("spotlight-main")
         self.win.set_child(main_box)
 
-        # Search Bar Area
         search_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
         search_container.add_css_class("search-header")
         
@@ -77,13 +112,11 @@ class SpotlightApp(Adw.Application):
         
         main_box.append(search_container)
 
-        # Scrollable area for results
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.scroll.set_vexpand(True)
         self.scroll.add_css_class("results-area")
         
-        # Results container (Stack for Grid/List)
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
         
@@ -103,13 +136,10 @@ class SpotlightApp(Adw.Application):
         self.scroll.set_child(self.stack)
         main_box.append(self.scroll)
 
-        # Focus lost -> close
-        # In GTK4 we use EventControllerFocus
         focus_ctrl = Gtk.EventControllerFocus()
         focus_ctrl.connect("leave", lambda _: self.win.close())
         self.win.add_controller(focus_ctrl)
 
-        # Keyboard shortcuts (Esc)
         key_ctrl = Gtk.EventControllerKey()
         key_ctrl.connect("key-pressed", self.on_key_pressed)
         self.win.add_controller(key_ctrl)
@@ -130,18 +160,15 @@ class SpotlightApp(Adw.Application):
         self.render_results()
 
     def render_results(self):
-        # Clear current results
         while (child := self.list_box.get_first_child()): self.list_box.remove(child)
         while (child := self.grid.get_first_child()): self.grid.remove(child)
 
-        for app in self.filtered_apps[:200]: # Increased limit
+        for app in self.filtered_apps[:200]:
             if self.is_grid_view:
                 self.grid.append(self.create_grid_item(app))
             else:
                 self.list_box.append(self.create_list_item(app))
-
         
-        # Select first item
         if not self.is_grid_view:
             first_row = self.list_box.get_row_at_index(0)
             if first_row: self.list_box.select_row(first_row)
@@ -150,7 +177,10 @@ class SpotlightApp(Adw.Application):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
         box.add_css_class("app-item-list")
         
-        icon = Gtk.Image.new_from_gicon(app['icon'])
+        if app['icon']:
+            icon = Gtk.Image.new_from_gicon(app['icon'])
+        else:
+            icon = Gtk.Image.new_from_icon_name("view-app-grid-symbolic")
         icon.set_pixel_size(32)
         icon.add_css_class("app-icon")
         
@@ -173,65 +203,12 @@ class SpotlightApp(Adw.Application):
     def create_grid_item(self, app):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         box.add_css_class("app-item-grid")
-        box.set_size_request(100, -1) # Let height be dynamic for wrapped text
+        box.set_size_request(100, -1)
         
-        icon = Gtk.Image.new_from_gicon(app['icon'])
-        icon.set_pixel_size(64)
-        icon.add_css_class("app-icon-grid")
-        
-        name_label = Gtk.Label(label=app['name'])
-        name_label.add_css_class("app-name-grid")
-        name_label.set_wrap(True)
-        name_label.set_justify(Gtk.Justification.CENTER)
-        name_label.set_max_width_chars(15)
-        name_label.set_halign(Gtk.Align.CENTER)
-
-        box.append(icon)
-        box.append(name_label)
-        return box
-
-    def on_enter_pressed(self, entry):
-        if self.filtered_apps:
-            self.launch_app(self.filtered_apps[0])
-
-    def on_row_activated(self, listbox, row):
-        index = row.get_index()
-        self.launch_app(self.filtered_apps[index])
-
-    def on_child_activated(self, flowbox, child):
-        index = child.get_index()
-        self.launch_app(self.filtered_apps[index])
-
-    def launch_app(self, app):
-        app['app_info'].launch(None, None)
-        self.win.close()
-
-    def on_key_pressed(self, ctrl, keyval, keycode, state):
-        if keyval == Gdk.KEY_Escape:
-            self.win.close()
-            return True
-        return False
-
-if __name__ == "__main__":
-    app = SpotlightApp()
-    app.run(sys.argv)
-       desc_label.add_css_class("app-desc")
-        desc_label.set_ellipsize(True)
-        desc_label.set_max_width_chars(60)
-
-        info_box.append(name_label)
-        info_box.append(desc_label)
-        
-        box.append(icon)
-        box.append(info_box)
-        return box
-
-    def create_grid_item(self, app):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        box.add_css_class("app-item-grid")
-        box.set_size_request(100, -1) # Let height be dynamic for wrapped text
-        
-        icon = Gtk.Image.new_from_gicon(app['icon'])
+        if app['icon']:
+            icon = Gtk.Image.new_from_gicon(app['icon'])
+        else:
+            icon = Gtk.Image.new_from_icon_name("view-app-grid-symbolic")
         icon.set_pixel_size(64)
         icon.add_css_class("app-icon-grid")
         
