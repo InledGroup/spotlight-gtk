@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Spotlight
+Exec=/usr/bin/spotlight-python
+Icon=view-app-grid-symbolic
+Type=Application
+Categories=Utility;
+Comment=Apple-like Spotlight launcher
+Terminal=false

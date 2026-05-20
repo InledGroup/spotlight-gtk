@@ -1,0 +1,42 @@
+name: Build and Release .deb
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    if: contains(github.event.head_commit.message, '[RELEASE]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg devscripts
+
+      - name: Build .deb package
+        run: |
+          mkdir -p pkg/usr/bin pkg/usr/share/applications pkg/usr/share/spotlight-python pkg/DEBIAN
+          cp spotlight-python/pkg/DEBIAN/control pkg/DEBIAN/
+          cp spotlight-python/pkg/usr/share/applications/spotlight-python.desktop pkg/usr/share/applications/
+          cp spotlight-python/pkg/usr/bin/spotlight-python pkg/usr/bin/
+          cp spotlight-python/main.py pkg/usr/share/spotlight-python/
+          cp spotlight-python/style.css pkg/usr/share/spotlight-python/
+          chmod +x pkg/usr/bin/spotlight-python
+          dpkg-deb --build pkg spotlight-python.deb
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: spotlight-python.deb
+          tag_name: v1.0.${{ github.run_number }}
+          name: Release v1.0.${{ github.run_number }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

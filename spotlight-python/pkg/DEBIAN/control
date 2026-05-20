@@ -1,0 +1,9 @@
+Package: spotlight-python
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Jaime <jaime@example.com>
+Depends: python3, python3-gi, python3-gi-cairo, gir1.2-gtk-4.0, gir1.2-adw-1, libadwaita-1-0
+Description: Spotlight clone in Python and GTK4.
+ A fast, beautiful application launcher with Liquid Glass aesthetics.
