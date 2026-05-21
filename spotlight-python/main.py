@@ -104,8 +104,8 @@ X-GNOME-Autostart-enabled=true
             self.win.present()
             self.search_entry.set_text("")
             self.search_entry.grab_focus()
-            self.load_apps()
-            self.render_results()
+            # We don't reload apps here to be instant. 
+            # Apps are already loaded in __init__ or first activation.
 
     def build_ui(self):
         style_manager = Adw.StyleManager.get_default()

@@ -10,15 +10,20 @@ from gi.repository import Gtk, GLib
 MAIN_PID = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
 def show_app(icon=None):
-    # This is called on left click
+    # Instant activation via D-Bus to avoid Python startup overhead
     try:
-        # Try to call the installed binary first
-        subprocess.Popen(["spotlight-python"])
-    except FileNotFoundError:
-        # Fallback to local script
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        main_script = os.path.join(script_dir, 'main.py')
-        subprocess.Popen(["python3", main_script])
+        subprocess.Popen([
+            "gdbus", "call", "--session", 
+            "--dest", "com.jaime.spotlight", 
+            "--object-path", "/com/jaime/spotlight", 
+            "--method", "org.freedesktop.Application.Activate", "{}"
+        ])
+    except:
+        # Fallback if gdbus fails
+        try:
+            subprocess.Popen(["spotlight-python"])
+        except:
+            pass
 
 def on_popup_menu(icon, button, time):
     # This is called on right click
