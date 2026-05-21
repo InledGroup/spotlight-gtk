@@ -28,6 +28,7 @@ jobs:
           cp spotlight-python/pkg/usr/bin/spotlight-python pkg/usr/bin/
           cp spotlight-python/main.py pkg/usr/share/spotlight-python/
           cp spotlight-python/style.css pkg/usr/share/spotlight-python/
+          cp spotlight-python/tray.py pkg/usr/share/spotlight-python/
           chmod +x pkg/usr/bin/spotlight-python
           dpkg-deb --build pkg spotlight-python.deb
 
