@@ -67,54 +67,31 @@ X-GNOME-Autostart-enabled=true
 
     def start_tray(self):
         if self.indicator_proc is not None:
-            return # Process already started
+            return
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
         tray_script = os.path.join(script_dir, 'tray.py')
         
         if os.path.exists(tray_script):
             try:
-                # Use sys.executable to ensure we use the same python interpreter
                 self.indicator_proc = subprocess.Popen([sys.executable, tray_script, str(os.getpid())])
             except Exception as e:
-                print(f"Failed to start tray icon: {e}")
+                print(f"Failed to start tray: {e}")
         else:
-            # Try system path if script not found in same dir (when installed)
             sys_tray = "/usr/share/spotlight-python/tray.py"
             if os.path.exists(sys_tray):
                 try:
                     self.indicator_proc = subprocess.Popen([sys.executable, sys_tray, str(os.getpid())])
                 except Exception as e:
-                    print(f"Failed to start tray icon from system path: {e}")
-
-    def center_window(self):
-        if not self.win:
-            return
-            
-        # Get the monitor where the pointer is or the primary monitor
-        display = Gdk.Display.get_default()
-        monitors = display.get_monitors()
-        if monitors.get_n_items() > 0:
-            # We'll use the first monitor for consistent centering
-            monitor = monitors.get_item(0)
-            geometry = monitor.get_geometry()
-            
-            # Since GTK4 doesn't have set_position(CENTER), 
-            # and set_margin might be unreliable, 
-            # for a fixed size window (680x500), 
-            # the best we can do is hope the compositor respects the 'Spotlight' nature.
-            # However, we can use a trick with a Gtk.Fixed or simply ensuring 
-            # it's presented correctly.
-            pass
+                    print(f"Failed to start system tray: {e}")
 
     def do_activate(self):
-        self.hold() # Keep the app alive even without windows
+        self.hold()
         self.start_tray()
         if not self.win:
             self.load_apps()
             self.build_ui()
             
-            # Check if we should start hidden
             is_hidden = False
             for arg in sys.argv:
                 if arg == "--hidden":
@@ -124,76 +101,22 @@ X-GNOME-Autostart-enabled=true
             if not is_hidden:
                 self.win.present()
         else:
-            # Re-center and show
             self.win.present()
             self.search_entry.set_text("")
             self.search_entry.grab_focus()
             self.load_apps()
             self.render_results()
 
-    def load_apps(self):
-        app_dict = {}
-        all_app_infos = Gio.AppInfo.get_all()
-        for app in all_app_infos:
-            if app.get_name():
-                app_id = app.get_id() or app.get_name()
-                app_dict[app_id] = {
-                    'name': app.get_name(),
-                    'comment': app.get_description() or "",
-                    'icon': app.get_icon(),
-                    'app_info': app
-                }
-
-        paths = [
-            "/usr/share/applications",
-            "/usr/local/share/applications",
-            "/var/lib/flatpak/exports/share/applications",
-            "/var/lib/snapd/desktop/applications"
-        ]
-        
-        home = GLib.get_home_dir()
-        if home:
-            paths.append(home + "/.local/share/applications")
-            paths.append(home + "/.local/share/flatpak/exports/share/applications")
-
-        for path in paths:
-            if not os.path.exists(path): continue
-            for filename in os.listdir(path):
-                if filename.endswith(".desktop"):
-                    file_path = os.path.join(path, filename)
-                    try:
-                        app = Gio.DesktopAppInfo.new_from_filename(file_path)
-                        if app and app.get_name():
-                            app_id = app.get_id() or filename
-                            if app_id not in app_dict:
-                                app_dict[app_id] = {
-                                    'name': app.get_name(),
-                                    'comment': app.get_description() or "",
-                                    'icon': app.get_icon(),
-                                    'app_info': app
-                                }
-                    except:
-                        continue
-
-        self.all_apps = list(app_dict.values())
-        self.all_apps.sort(key=lambda x: x['name'].lower())
-        self.filtered_apps = self.all_apps[:]
-
     def build_ui(self):
-        # Force dark theme using Adw.StyleManager
         style_manager = Adw.StyleManager.get_default()
         style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
         
-        # Main Window
         self.win = Gtk.ApplicationWindow(application=self)
         self.win.set_default_size(680, 500)
         self.win.set_decorated(False)
         self.win.set_resizable(False)
-        
-        # Hint to the compositor that this is a dialog/launcher
         self.win.set_title("Spotlight")
 
-        # Resolve CSS path
         script_dir = os.path.dirname(os.path.abspath(__file__))
         css_path = os.path.join(script_dir, 'style.css')
         css_provider = Gtk.CssProvider()
@@ -201,7 +124,6 @@ X-GNOME-Autostart-enabled=true
             css_provider.load_from_path(css_path)
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-        # The actual spotlight box
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.main_box.add_css_class("spotlight-main")
         self.win.set_child(self.main_box)
@@ -227,7 +149,6 @@ X-GNOME-Autostart-enabled=true
         search_container.append(search_icon)
         search_container.append(self.search_entry)
         search_container.append(self.view_toggle_btn)
-        
         self.main_box.append(search_container)
 
         self.scroll = Gtk.ScrolledWindow()
@@ -250,7 +171,6 @@ X-GNOME-Autostart-enabled=true
 
         self.stack.add_named(self.list_box, "list")
         self.stack.add_named(self.grid, "grid")
-        
         self.stack.set_visible_child_name("grid" if self.is_grid_view else "list")
         self.view_toggle_btn.set_icon_name("view-list-symbolic" if self.is_grid_view else "view-grid-symbolic")
         
@@ -266,10 +186,7 @@ X-GNOME-Autostart-enabled=true
         self.win.add_controller(key_ctrl)
 
         self.render_results()
-        # self.win.present() # Handled in do_activate
         self.search_entry.grab_focus()
-
-        # Handle close request to hide instead of closing
         self.win.connect("close-request", self.on_close_request)
 
     def on_close_request(self, win):
@@ -305,26 +222,21 @@ X-GNOME-Autostart-enabled=true
     def create_list_item(self, app):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
         box.add_css_class("app-item-list")
-        
         if app['icon']:
             icon = Gtk.Image.new_from_gicon(app['icon'])
         else:
             icon = Gtk.Image.new_from_icon_name("application-x-executable-symbolic")
         icon.set_pixel_size(32)
         icon.add_css_class("app-icon")
-        
         info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         name_label = Gtk.Label(label=app['name'], xalign=0)
         name_label.add_css_class("app-name")
-        
         desc_label = Gtk.Label(label=app['comment'], xalign=0)
         desc_label.add_css_class("app-desc")
         desc_label.set_ellipsize(True)
         desc_label.set_max_width_chars(60)
-
         info_box.append(name_label)
         info_box.append(desc_label)
-        
         box.append(icon)
         box.append(info_box)
         return box
@@ -333,21 +245,18 @@ X-GNOME-Autostart-enabled=true
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         box.add_css_class("app-item-grid")
         box.set_size_request(100, -1)
-        
         if app['icon']:
             icon = Gtk.Image.new_from_gicon(app['icon'])
         else:
             icon = Gtk.Image.new_from_icon_name("application-x-executable-symbolic")
         icon.set_pixel_size(64)
         icon.add_css_class("app-icon-grid")
-        
         name_label = Gtk.Label(label=app['name'])
         name_label.add_css_class("app-name-grid")
         name_label.set_wrap(True)
         name_label.set_justify(Gtk.Justification.CENTER)
         name_label.set_max_width_chars(15)
         name_label.set_halign(Gtk.Align.CENTER)
-
         box.append(icon)
         box.append(name_label)
         return box
@@ -372,16 +281,51 @@ X-GNOME-Autostart-enabled=true
         if keyval == Gdk.KEY_Escape:
             self.win.set_visible(False)
             return True
-        
-        # Ctrl+Q to quit
         if (state & Gdk.ModifierType.CONTROL_MASK) and keyval == Gdk.KEY_q:
             self.quit()
             return True
-            
         return False
+
+    def load_apps(self):
+        app_dict = {}
+        all_app_infos = Gio.AppInfo.get_all()
+        for app in all_app_infos:
+            if app.get_name():
+                app_id = app.get_id() or app.get_name()
+                app_dict[app_id] = {
+                    'name': app.get_name(),
+                    'comment': app.get_description() or "",
+                    'icon': app.get_icon(),
+                    'app_info': app
+                }
+        paths = ["/usr/share/applications", "/usr/local/share/applications", "/var/lib/flatpak/exports/share/applications", "/var/lib/snapd/desktop/applications"]
+        home = GLib.get_home_dir()
+        if home:
+            paths.append(home + "/.local/share/applications")
+            paths.append(home + "/.local/share/flatpak/exports/share/applications")
+        for path in paths:
+            if not os.path.exists(path): continue
+            for filename in os.listdir(path):
+                if filename.endswith(".desktop"):
+                    file_path = os.path.join(path, filename)
+                    try:
+                        app = Gio.DesktopAppInfo.new_from_filename(file_path)
+                        if app and app.get_name():
+                            app_id = app.get_id() or filename
+                            if app_id not in app_dict:
+                                app_dict[app_id] = {
+                                    'name': app.get_name(),
+                                    'comment': app.get_description() or "",
+                                    'icon': app.get_icon(),
+                                    'app_info': app
+                                }
+                    except:
+                        continue
+        self.all_apps = list(app_dict.values())
+        self.all_apps.sort(key=lambda x: x['name'].lower())
+        self.filtered_apps = self.all_apps[:]
 
 if __name__ == "__main__":
     app = SpotlightApp()
-    # Filter out our custom flags before passing to Gtk.Application
     clean_argv = [arg for arg in sys.argv if arg != "--hidden"]
     app.run(clean_argv)

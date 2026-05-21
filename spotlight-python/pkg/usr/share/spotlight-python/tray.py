@@ -10,14 +10,18 @@ from gi.repository import Gtk, GLib
 MAIN_PID = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
 def show_app(icon=None):
+    # This is called on left click
     try:
+        # Try to call the installed binary first
         subprocess.Popen(["spotlight-python"])
     except FileNotFoundError:
+        # Fallback to local script
         script_dir = os.path.dirname(os.path.abspath(__file__))
         main_script = os.path.join(script_dir, 'main.py')
         subprocess.Popen(["python3", main_script])
 
 def on_popup_menu(icon, button, time):
+    # This is called on right click
     menu = Gtk.Menu()
     
     item_show = Gtk.MenuItem(label="Show Spotlight")
@@ -44,19 +48,18 @@ def check_main_pid():
         try:
             os.kill(MAIN_PID, 0)
         except OSError:
+            # Main process died
             Gtk.main_quit()
             return False
     return True
 
 def main():
-    # Gtk.StatusIcon is the classic way and supports click events perfectly
+    # Gtk.StatusIcon supports 'activate' (left click)
     icon = Gtk.StatusIcon.new_from_icon_name("system-search-symbolic")
     icon.set_title("Spotlight")
+    icon.set_tooltip_text("Spotlight Launcher")
     
-    # Left click: Show Spotlight
     icon.connect("activate", show_app)
-    
-    # Right click: Context menu
     icon.connect("popup-menu", on_popup_menu)
     
     if MAIN_PID:
