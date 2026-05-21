@@ -188,7 +188,9 @@ X-GNOME-Autostart-enabled=true
         self.win = Gtk.ApplicationWindow(application=self)
         self.win.set_default_size(680, 500)
         self.win.set_decorated(False)
-        # In GTK4, we use these hints to help the compositor
+        self.win.set_resizable(False)
+        
+        # Hint to the compositor that this is a dialog/launcher
         self.win.set_title("Spotlight")
 
         # Resolve CSS path
